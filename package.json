@@ -1,13 +1,12 @@
 {
   "name": "psd",
-  "version": "0.4.5",
+  "version": "0.4.6",
   "description": "A Photoshop file format (PSD) parser written in Coffeescript/Javascript",
-  "homepage": "http://meltingice.github.com/psd.js/",
-  "author": "Ryan LeFevre <ryan@twitpic.com> (http://meltingice.net/)",
+  "author": "Flite Engineering with thanks to Ryan LeFevre <ryan@twitpic.com> (http://meltingice.net/)",
   "main": "./lib/psd.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/meltingice/psd.js.git"
+    "url": "https://github.com/flite/psd.js.git"
   },
   "engines": {
     "node": ">= 0.5.5"
@@ -24,7 +23,7 @@
     "docco": ">= 0.3.0"
   },
   "bugs": {
-    "url": "https://github.com/meltingice/psd.js/issues"
+    "url": "https://github.com/flite/psd.js/issues"
   },
   "scripts": {
     "test": "cake test"
