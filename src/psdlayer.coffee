@@ -108,9 +108,6 @@ class PSDLayer
 
     @name = @legacyName unless @name?
 
-    if @name == '</Layer group>'
-      @isHidden = true
-
     Log.debug "Layer #{layerIndex}:", @
 
     # In case there are filler zeros
@@ -326,6 +323,8 @@ class PSDLayer
         when "lyid"
           @layerId = @file.readInt()
         when "lsct"
+          @readLayerSectionDivider()
+        when "lsdk" # Not sure where this comes from.
           @readLayerSectionDivider()
         when "lrFX" # PS 5.0
           @adjustments.legacyEffects = (new PSDEffectsInfo(@, length)).parseLegacy()
