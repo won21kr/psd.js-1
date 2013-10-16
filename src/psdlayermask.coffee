@@ -135,13 +135,17 @@ class PSDLayerMask
 
   groupLayers: ->
     groupLayer = null
+    groupStack = []
     for layer in @layers
+
+      if groupLayer and !layer.isHidden
+          layer.groupLayer = groupLayer
+
       if layer.isFolder
+        groupStack.push groupLayer
         groupLayer = layer
       else if layer.isHidden
-        groupLayer = null
-      else
-        layer.groupLayer = groupLayer
+        groupLayer = groupStack.pop()
 
   toJSON: ->
     data =

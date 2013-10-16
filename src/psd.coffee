@@ -8,7 +8,7 @@ else
 # Create our class and add to global scope
 Root.PSD = class PSD
   # Version number
-  @VERSION = "0.4.5"
+  @VERSION = "0.4.5.1"
 
   # Enable/disable debugging console logs
   @DEBUG = false
@@ -162,11 +162,11 @@ Root.PSD = class PSD
     for layer in @layers
       if layer.isFolder
         parseStack.push result
-        result = {name: layer.name, layers: []}
+        result = {visible: layer.visible, folder: true, name: layer.name, layers: []}
       else if layer.isHidden
-        temp = result
+        current = result
         result = parseStack.pop()
-        result.layers.push temp
+        result.layers.push current
       else
         result.layers.push layer
 

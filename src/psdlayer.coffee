@@ -108,6 +108,9 @@ class PSDLayer
 
     @name = @legacyName unless @name?
 
+    if @name == '</Layer group>'
+      @isHidden = true
+
     Log.debug "Layer #{layerIndex}:", @
 
     # In case there are filler zeros
@@ -339,6 +342,7 @@ class PSDLayer
         Log.debug "Warning: additional layer info with key #{key} - unexpected end. Position = #{@file.tell()}, Expected = #{(pos + length)}"
         @file.seek pos + length, false # Attempt to recover
 
+
         
   readLayerSectionDivider: ->
     code = @file.readInt()
@@ -349,6 +353,7 @@ class PSDLayer
     switch code
       when 1, 2 then @isFolder = true
       when 3 then @isHidden = true
+
 
   toJSON: ->
     sections = [
