@@ -216,7 +216,6 @@ class PSDImage
           when -1
             if @getImageChannels() is 4
               pixel.a = @channelData[i + (@channelLength * index)]
-            else continue
           when 0 then pixel.r = @channelData[i + (@channelLength * index)]
           when 1 then pixel.g = @channelData[i + (@channelLength * index)]
           when 2 then pixel.b = @channelData[i + (@channelLength * index)]
@@ -224,7 +223,7 @@ class PSDImage
         index++
 
       @pixelData.push pixel.r, pixel.g, pixel.b, @getAlphaValue(pixel.a)
-      
+
 
   combineRGB16Channel: ->
     for i in [0...@numPixels] by 2
@@ -239,7 +238,6 @@ class PSDImage
           when -1
             if @getImageChannels() is 4
               pixel.a = Util.toUInt16(b1, b2)
-            else continue
           when 0 then pixel.r = Util.toUInt16(b1, b2)
           when 1 then pixel.g = Util.toUInt16(b1, b2)
           when 2 then pixel.b = Util.toUInt16(b1, b2)

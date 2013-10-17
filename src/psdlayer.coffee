@@ -71,6 +71,7 @@ class PSDLayer
   constructor: (@file, @header = null) ->
     @image = null
     @mask = {}
+    @vectorMask = {}
     @blendingRanges = {}
     @adjustments = {}
 
@@ -322,10 +323,8 @@ class PSDLayer
           @file.seek pos + length, false
         when "lyid"
           @layerId = @file.readInt()
-        when "lsct"
-          @readLayerSectionDivider()
-        when "lsdk" # Not sure where this comes from.
-          @readLayerSectionDivider()
+        when "lsct", "lsdk" # Not sure where 'lsdk' comes from.
+          @readLayerSectionDivider length
         when "lrFX" # PS 5.0
           @adjustments.legacyEffects = (new PSDEffectsInfo(@, length)).parseLegacy()
           @file.read(2) # why these 2 bytes?
@@ -333,6 +332,8 @@ class PSDLayer
           @adjustments.effects = (new PSDEffectsInfo(@, length)).parse()
         when "selc"
           @adjustments.selectiveColor = (new PSDSelectiveColor(@, length)).parse()
+        when "vmsk", "vmsm"
+          @parseVectorMaskData length
         else  
           @file.seek length
           Log.debug("Skipping additional layer info with key #{key}")
@@ -343,7 +344,7 @@ class PSDLayer
 
 
         
-  readLayerSectionDivider: ->
+  readLayerSectionDivider: (length) ->
     code = @file.readInt()
     @layerType = SECTION_DIVIDER_TYPES[code]
 
@@ -352,6 +353,24 @@ class PSDLayer
     switch code
       when 1, 2 then @isFolder = true
       when 3 then @isHidden = true
+
+    #Seek to end (length - readInt)
+    @file.seek length - 4
+
+
+  parseVectorMaskData: (length) ->
+    version = @file.readInt()
+    flags = @file.readInt()
+
+    @vectorMask.version = version
+    @vectorMask.invert = flags >> 1 & 1
+    @vectorMask.notLink = flags >> 2 & 1
+    @vectorMask.disable = flags >> 3 & 1
+
+    Log.debug "Vector Mask version: #{version}, flags(invert: #{@vectorMask.invert}, disable: #{@vectorMask.disable})"
+
+    #Seek to end (length - readInt * 2)
+    @file.seek length - 8
 
 
   toJSON: ->
