@@ -16,6 +16,9 @@ class PSDLayerMask
   skip: -> @file.seek @file.readInt()
 
   parse: ->
+    #Deferred
+    maskDeferred = new Deferred
+
     # Read the size of the entire layers and masks section
     maskSize = @file.readInt()
     endLoc = @file.tell() + maskSize
@@ -57,35 +60,49 @@ class PSDLayerMask
         layer.parse(i)
         @layers.push layer
 
-      for layer in @layers
-        if layer.isFolder or layer.isHidden
-          # Layer contains no image data. Skip ahead.
-          @file.seek 8
-          continue
+      batchSize = @numLayers
+      if @options.layerImages
+        batchSize = 10
 
-        layer.image = new PSDChannelImage(@file, @header, layer)
+      layerMask = @
 
-        if @options.layerImages and (
-          (@options.onlyVisibleLayers and layer.visible) or
-          !@options.onlyVisibleLayers
-          )
-          layer.image.parse()
+      parseBatch = (layers, index) ->
+        for l in [0...batchSize]
+          layer = layers[index + l]
+          continue unless layer
+
+          if layer.isFolder or layer.isHidden
+            # Layer contains no image data. Skip ahead.
+            @file.seek 8
+            continue
+
+          layer.image = new PSDChannelImage(@file, @header, layer)
+
+          if @options.layerImages and (
+            (@options.onlyVisibleLayers and layer.visible) or
+            !@options.onlyVisibleLayers
+            )
+            layer.image.parse()
+          else
+            layer.image.skip()
+
+        index += batchSize
+
+        if index < layers.length
+          setTimeout (() -> parseBatch.call layerMask, layers, index), 500
         else
-          layer.image.skip()
+          # Layers are parsed in reverse order
+          @layers.reverse()
+          @groupLayers()
+          maskDeferred.resolve @layers
 
-      # Layers are parsed in reverse order
-      @layers.reverse()
-      @groupLayers()
+      layers = @layers
+      setTimeout (() -> parseBatch.call layerMask, layers, 0), 500
 
-    # In case there are filler zeros
-    @file.seek pos + layerInfoSize, false
+    else
+      maskDeferred.resolve @layers
 
-    # Parse the global layer mask
-    @parseGlobalMask()
-
-    # Temporarily skip the rest of layers & masks section
-    @file.seek endLoc, false
-    return
+    maskDeferred.promise
 
     # We have more additional info to parse, especially beacuse this is PS >= 4.0
     #@parseExtraInfo(endLoc) if @file.tell() < endLoc
@@ -135,13 +152,17 @@ class PSDLayerMask
 
   groupLayers: ->
     groupLayer = null
+    groupStack = []
     for layer in @layers
+
+      if groupLayer and !layer.isHidden
+          layer.groupLayer = groupLayer
+
       if layer.isFolder
+        groupStack.push groupLayer
         groupLayer = layer
       else if layer.isHidden
-        groupLayer = null
-      else
-        layer.groupLayer = groupLayer
+        groupLayer = groupStack.pop()
 
   toJSON: ->
     data =

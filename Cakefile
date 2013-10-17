@@ -1,7 +1,7 @@
-fs      = require 'fs'
-{exec, spawn}  = require 'child_process'
-util    = require 'util'
-{jsmin} = require 'jsmin'
+fs            = require 'fs'
+{exec, spawn} = require 'child_process'
+util          = require 'util'
+{jsmin}       = require 'jsmin'
 
 targetName    = "psd"
 
@@ -12,7 +12,7 @@ strictMode    = false
 csSrcDir      = "src"
 csTargetDir   = "lib"
 
-depsDir        = "deps"
+depsDir       = "deps"
 
 targetCoffee  = "#{csSrcDir}/build"
 

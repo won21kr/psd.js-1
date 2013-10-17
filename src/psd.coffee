@@ -8,7 +8,7 @@ else
 # Create our class and add to global scope
 Root.PSD = class PSD
   # Version number
-  @VERSION = "0.4.5"
+  @VERSION = "0.4.6"
 
   # Enable/disable debugging console logs
   @DEBUG = false
@@ -63,6 +63,9 @@ Root.PSD = class PSD
     @images = null
     @image = null
 
+    #Create a promise, which we shall fulfill
+    @deferred = new Deferred
+
   setOptions: (options) ->
     @options[key] = val for own key, val of options
 
@@ -70,16 +73,20 @@ Root.PSD = class PSD
   parse: ->
     Log.debug "Beginning parsing"
     @startTime = (new Date()).getTime()
+    psd = @
 
     # It's important to parse all of the file sections in the correct order,
     # which is used here.
     @parseHeader()
     @parseImageResources()
-    @parseLayersMasks()
-    @parseImageData()
+    promise = @parseLayersMasks()
+    promise.then () ->
+      psd.parseImageData()
+      psd.endTime = (new Date()).getTime()
+      Log.debug "Parsing finished in #{psd.endTime - psd.startTime}ms"
+      psd.deferred.resolve psd
 
-    @endTime = (new Date()).getTime()
-    Log.debug "Parsing finished in #{@endTime - @startTime}ms"
+    @deferred.promise
 
   # Parse the first section: the header.
   # This section cannot be skipped, since it contains important parsing information
@@ -135,14 +142,22 @@ Root.PSD = class PSD
 
     Log.debug "\n### Layers & Masks ###"
 
+    #Deferred for layer parsing
+    layerDeferred = new Deferred
+
     @layerMask = new PSDLayerMask @file, @header, @options
     @layers = @layerMask.layers
 
     if skip
       Log.debug "Skipped!"
       @layerMask.skip()
+      layerDeferred.resolve @layerMask
     else
-      @layerMask.parse()
+      promise = @layerMask.parse()
+      promise.then () ->
+        layerDeferred.resolve @layerMask
+
+    layerDeferred.promise
 
   parseImageData: ->
     @parseHeader() unless @header
@@ -162,11 +177,11 @@ Root.PSD = class PSD
     for layer in @layers
       if layer.isFolder
         parseStack.push result
-        result = {name: layer.name, layers: []}
+        result = {visible: layer.visible, folder: true, name: layer.name, layers: []}
       else if layer.isHidden
-        temp = result
+        current = result
         result = parseStack.pop()
-        result.layers.push temp
+        result.layers.push current
       else
         result.layers.push layer
 
